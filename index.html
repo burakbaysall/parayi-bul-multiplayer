@@ -256,7 +256,7 @@ const countryBudgets={
 Object.assign(countryBudgets,{"CAD":{"easy":[30750,55350],"hard":[18450,70110],"pro":[10455,88560]},"AUD":{"easy":[38000,68400],"hard":[22800,86640],"pro":[12920,109440]},"INR":{"easy":[2125000,3825000],"hard":[1275000,4845000],"pro":[722500,6120000]},"MXN":{"easy":[475000,855000],"hard":[285000,1083000],"pro":[161500,1368000]},"SGD":{"easy":[33750,60750],"hard":[20250,76950],"pro":[11475,97200]},"ZAR":{"easy":[450000,810000],"hard":[270000,1026000],"pro":[153000,1296000]},"NOK":{"easy":[275000,495000],"hard":[165000,627000],"pro":[93500,792000]},"SEK":{"easy":[275000,495000],"hard":[165000,627000],"pro":[93500,792000]},"SAR":{"easy":[93750,168750],"hard":[56250,213750],"pro":[31875,270000]},"EGP":{"easy":[1250000,2250000],"hard":[750000,2850000],"pro":[425000,3600000]}});
 const budget=(c,d)=>{const b=countryBudgets[c]||countryBudgets.TRY;const x=b[d]||b.easy;return {start:x[0],target:x[1],unit:x[0]/6500,debtLimit:Math.round(x[0]*2.55),warningDebt:Math.round(x[0]*1.7),bankruptFloor:-Math.round(x[0]*.77),warningFloor:Math.round(x[0]*.15)};};
 const budgetNow=()=>budget(currency(),s?.difficulty||selectedDifficulty);
-updateWorldMap();
+
 const amount=(n,c=currency())=>Math.round(n*budget(c,s?.difficulty||selectedDifficulty).unit);
 async function loadRates(){try{const res=await fetch('https://api.frankfurter.dev/v1/latest?base=USD&symbols=TRY,BRL,ARS,GBP,EUR,JPY,CHF,AED,KRW,CAD,AUD,INR,MXN,SGD,ZAR,NOK,SEK,SAR,EGP',{cache:'no-store',signal:AbortSignal.timeout(5000)});if(!res.ok)throw Error('FX '+res.status);const d=await res.json();if(!d.rates?.TRY)throw Error('Kur eksik');rates={...rates,...d.rates,USD:1};rateDate=d.date||'Son yayımlanan';ratesLive=true;}catch(e){ratesLive=false;rateDate='Tahmini yedek kur';}}
 
