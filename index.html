@@ -135,7 +135,7 @@ async function refreshLive(){if(!host||!s||liveFetching)return;liveFetching=true
 const difficulties={easy:{label:'🌱 EASY',seconds:15,start:6500,gain:1.35,loss:.55,target:11000,high:2,debtLimit:16500,warningDebt:11000},hard:{label:'🔥 HARD',seconds:10,start:4000,gain:1.15,loss:1,target:14000,high:3,debtLimit:12500,warningDebt:8000},pro:{label:'💀 PRO',seconds:7,start:2200,gain:1.05,loss:1.55,target:17000,high:3,debtLimit:9000,warningDebt:5500}};
 let selectedDifficulty='easy';
 document.querySelectorAll('[data-difficulty]').forEach(btn=>btn.addEventListener('click',()=>{selectedDifficulty=btn.dataset.difficulty;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('chosen',b===btn));}));
-let peer,host=false,conns={},mine='',room='',s=null,pending=false,connectionError='',lastStep=-1,hostTimer=null,clockTimer=null,choiceRenderKey='',voteRenderKey=';
+let peer,host=false,conns={},mine='',room='',s=null,pending=false,connectionError='',lastStep=-1,hostTimer=null,clockTimer=null,choiceRenderKey='',voteRenderKey='';
 const status=t=>$('status').textContent=t;
 document.querySelectorAll('[data-fighter]').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('[data-fighter]').forEach(b=>{let chosen=b===btn;b.classList.toggle('selected',chosen);b.setAttribute('aria-checked',String(chosen));});$('who').value=btn.dataset.fighter;}));
 const shuffle=a=>a.map(v=>[Math.random(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
