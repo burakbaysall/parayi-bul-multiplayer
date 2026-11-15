@@ -194,8 +194,8 @@ const difficulties={easy:{label:'🌱 EASY',seconds:15,start:6500,gain:1.35,loss
 let selectedDifficulty='easy';
 document.querySelectorAll('[data-difficulty]').forEach(btn=>btn.addEventListener('click',()=>{selectedDifficulty=btn.dataset.difficulty;document.querySelectorAll('[data-difficulty]').forEach(b=>b.classList.toggle('chosen',b===btn));}));
 let peer,host=false,conns={},mine='',room='',s=null,pending=false,connectionError='',lastStep=-1,hostTimer=null,clockTimer=null,choiceRenderKey='',voteRenderKey='';
-const SAVE_KEY='parayibul-session-v2';let closingRoom=false,reconnectTimer=null;
-function saveSession(){try{if(!room||!mine)return;localStorage.setItem(SAVE_KEY,JSON.stringify({room,mine,host,state:host?s:null,updated:Date.now()}));}catch(e){}}
+const SAVE_KEY='parayibul-session-v2';try{localStorage.removeItem(SAVE_KEY);}catch(e){}let closingRoom=false,reconnectTimer=null;
+function saveSession(){}
 function clearSession(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
 function savedSession(){try{const x=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return x&&names.includes(x.mine)&&typeof x.room==='string'&&x.room.length<100?x:null;}catch(e){return null;}}
 function finishRoom(){closingRoom=true;clearSession();clearInterval(hostTimer);clearInterval(clockTimer);clearInterval(reconnectTimer);for(const c of Object.values(conns))try{c.close()}catch(e){}try{peer?.destroy()}catch(e){}location.href=location.pathname;}
@@ -280,7 +280,7 @@ const v=$('vote');v.classList.toggle('hidden',!s.proposal);const voteKey=s.propo
 function escapeHtml(t){return String(t).replace(/[&<>"]/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]));}
 $('create').onclick=async()=>{if(peer)return;mine=$('who').value;host=true;$('create').disabled=true;try{room=await setup('parayibul-'+Math.random().toString(36).slice(2,9));await loadRates();s=newState();saveSession();peer.on('connection',attach);hostTimer=setInterval(tick,200);enter();refreshLive();}catch(e){peer?.destroy();peer=null;$('create').disabled=false;status('Oda oluşturulamadı: '+(e.message||e));}};
 $('join').onclick=async()=>{if(peer)return;mine=$('who').value;room=$('room').value.trim();if(!room){status('Oda kodunu gir.');return;}$('join').disabled=true;try{await setup();let c=peer.connect(room,{reliable:true});conns.host=c;c.on('open',()=>{connectionError='';c.send({type:'hello',name:mine});});c.on('data',m=>{if(m.type==='roomClosed'){alert('Oda '+m.by+' tarafından kapatıldı.');finishRoom();return;}if(m.type==='reject'){alert(m.message);clearSession();location.reload();}if(m.type==='state'){s=m.state;pending=false;connectionError='';saveSession();enter();}});c.on('close',()=>{if(closingRoom)return;connectionError='Oda sahibiyle bağlantı kesildi. Yeniden bağlanılıyor…';if(s)render();});c.on('error',()=>{connectionError='Oda bağlantı hatası.';render();});setTimeout(()=>{if(!s)status('Bağlantı kurulamadı; oda kodunu kontrol edin.');},9000);}catch(e){peer?.destroy();peer=null;$('join').disabled=false;status('Odaya katılınamadı: '+(e.message||e));}};
-function requestRoomClose(){if(!confirm('Odayı tüm oyuncular için kapatıp ana sayfaya dönmek istiyor musun? Oyun kaydı silinecek.'))return;if(host)closeRoom(mine);else if(conns.host?.open)send({type:'closeRoom'});else{alert('Oda sahibine ulaşılamıyor. Bu cihazdaki oturum kapatılacak.');finishRoom();}}
+function requestRoomClose(){if(!confirm('Odayı tüm oyuncular için kapatıp ana sayfaya dönmek istiyor musun? Oyun kaydı silinecek.'))return;if(host)closeRoom(mine);else if(conns.host?.open){send({type:'closeRoom'});setTimeout(()=>{if(!closingRoom)finishRoom();},700);}else{alert('Oda sahibine ulaşılamıyor. Bu cihazdaki oturum kapatılacak.');finishRoom();}}
 $('closeRoom').onclick=requestRoomClose;
 $('homeLogo').onclick=()=>{if(!peer&&!s){location.href=location.pathname;return;}requestRoomClose();};
 $('escapeCountry').onclick=()=>send({type:'propose',kind:'escape'});
@@ -302,7 +302,9 @@ function resultCanvas(){let c=document.createElement('canvas');c.width=1080;c.he
 function blob(){return new Promise(resolve=>resultCanvas().toBlob(resolve,'image/png'));}
 $('download').onclick=async()=>{let b=await blob(),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=s.outcome==='win'?'parayi-bulduk.png':'iflas-ettik.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);};
 $('share').onclick=async()=>{let b=await blob(),f=new File([b],s.outcome==='win'?'parayi-bulduk.png':'iflas-ettik.png',{type:'image/png'});if(navigator.canShare?.({files:[f]})){try{await navigator.share({files:[f],title:'Parayı Bul!',text:s.outcome==='win'?'Parayı Bulduk!':'İflas Ettik!'});return;}catch(e){if(e.name==='AbortError')return;}}$('download').click();alert('Görsel indirildi. WhatsApp sohbetinde görsel olarak gönderebilirsin.');};
-(async function restoreSession(){const saved=savedSession();if(!saved)return;mine=saved.mine;room=saved.room;host=!!saved.host;$('who').value=mine;$('room').value=room;status('Önceki oturum geri yükleniyor…');try{if(host){if(!saved.state||!Array.isArray(saved.state.missions)){clearSession();host=false;return;}s=saved.state;s.players=Array.isArray(s.players)?s.players:[mine];if(!s.players.includes(mine))s.players.unshift(mine);s.deadline=0;await setup(room);await loadRates();peer.on('connection',attach);hostTimer=setInterval(tick,200);enter();sync();}else{await setup();reconnectToHost();reconnectTimer=setInterval(reconnectToHost,3000);setTimeout(()=>{if(!s)status('Oda sahibinin yeniden bağlanması bekleniyor…');},4500);}}catch(e){status('Oturum geri yüklenemedi: '+(e.message||e));try{peer?.destroy()}catch(x){}peer=null;host=false;}})();
+// Refresh always starts from the lobby; previous saved sessions are discarded.
+clearSession();
+
 $('whatsapp').onclick=()=>{let msg=(s.outcome==='win'?'🏆 Parayı Bulduk!':'💥 İflas Ettik!')+' Net servet: '+fmt(net())+' • '+location.href;window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');};
 clockTimer=setInterval(()=>{if(s){if(host)tick();render();}},250);document.documentElement.dataset.gameReady='true';
 })();
